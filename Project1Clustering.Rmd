@@ -1,0 +1,36 @@
+---
+title: "Project1Clustering"
+author: "Jasper Drumm"
+date: "2022-10-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Data Cleaning
+```{r}
+tele_data <- read.csv("tele.csv", stringsAsFactors = TRUE)
+tele_data <- lapply(tele_data$job, as.numeric)
+
+tele_data$duration <- NULL
+tele_data$X <- NULL
+
+tele_data$pdaysdummy <- ifelse(tele_data$pdays == 999, 0, 1)
+tele_data$pdays <- NULL
+
+str(tele_data)
+```
+
+## Training unsupervised learning models
+```{r}
+categories <- tele_data[1:2]
+write.csv(categories, "categories.csv")
+
+# categories_z <- as.data.frame(lapply(categories, scale))
+# tele_clusters <- kmeans(categories_z, 2)
+```
+
+

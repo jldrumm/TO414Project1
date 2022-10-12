@@ -88,7 +88,7 @@ tele_train <- tele_norm[-tele_sample,]
 library(neuralnet)
 
 tele_model <- neuralnet(formula = yyes~.,
-                              data = tele_train, hidden = 5)
+                              data = tele_train, hidden = 1)
 
 # hidden = c(9,7,4)
 ```
