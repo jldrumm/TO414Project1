@@ -22,20 +22,6 @@ tele_data$pdaysdummy <- ifelse(tele_data$pdays == 999, 0, 1)
 tele_data$pdays <- NULL
 
 str(tele_data)
-
-telemm <- as.data.frame(model.matrix(~.-1,tele_data))
-str(telemm)
-
-set.seed(12345)
-tele_random <- telemm[sample(nrow(telemm)),]
-
-#Normalize the data
-normalize <- function(x) {
-  return ((x - min(x)) / (max(x) - min(x)))
-}
-
-# we are going to normalize everything 
-tele_norm <- as.data.frame(lapply(tele_random, normalize))
 ```
 
 ## Training unsupervised learning models

@@ -1,6 +1,6 @@
 ---
 title: "Project1"
-author: "Jasper Drumm, Leif Gullstad, Thomas Papesh, Aidan Hatzer, Jonah Cuenca"
+author: "Jasper Drumm, Leif Gullstad, Tommy Papesh, Aidan Hatzer, Jonah Cuenca"
 date: "2022-10-06"
 output: html_document
 ---
@@ -8,6 +8,13 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+## Cost Benefit Analysis
+
+```{}
+We will begin our report by starting with a cost-benefit analysis for the Telemarketing company. Because each call costs $1 for the company and each successful sale results in $6 of profit that means to at least break even 1 out of every 6 calls (16.67%) needs to be a successful sale. Therefore, our goal will be to create a prediction model which will result in at least 16.67% of the recommended calls being successful, thus ensuring the company breaks even, which is all they are concerned about according to knowledge given in class. 
+```
+
 
 ## Downloading and Prepping the Data
 
@@ -52,9 +59,43 @@ tele_norm <- as.data.frame(lapply(tele_random, normalize))
 ```
 
 
-## Getting Train and Test Samples
+## Starting With Clustering
+```{r}
+categories <- tele_norm #tele_norm is normalized using the normalize function we wrote 
+categories$yyes <- NULL
+
+
+categories_z <- as.data.frame(lapply(categories, scale)) # run on the normalized data so it is all numeric
+set.seed(12345)
+tele_clusters <- kmeans(categories_z, 5) 
+tele_clusters$centers
+tele_norm$cluster <- tele_clusters$cluster # put the cluster number with each tele record - leave clusters as numbers
+
+aggregate(data = tele_norm, yyes ~ cluster, mean) # this gives the success rate
+```
+
+# Clustering Analysis
+
+```{}
+After doing the clustering analysis we have determined that no models should be created for clusters 3 and 4 because they have a success rate of 19.52% and 63.70% respectively. Based on the cost-benefit analysis done above both of these clusters would be profitable without any additional modeling work needing to be done, because as discussed above if we can get an accuracy of 16.67% or better than we will at least break even. 
+
+Therefore we can now just make models for the 1st, 2nd, and 5th clusters to improve the accuracy when calling indidviduals in those clusters. 
+```
+
+# Create Cluster Variables
+```{r}
+cluster1_norm <- tele_norm[tele_norm$cluster == 1,]
+cluster2_norm <- tele_norm[tele_norm$cluster == 2,]
+cluster5_norm <- tele_norm[tele_norm$cluster == 5,]
+```
+
+
+TODO - EVERYTHING BELOW HERE! MODELS FOR CLUSTERS 1, 2, AND 5 - AND THEN THE PREDICTION WORK AS WELL AS THE EXPLANATION AT THE END
+
+## Getting Train and Test Samples for KNN Cluster 1
 
 ```{r}
+# TODO - THIS IS NOT CLUSTER 1 DATA
 # Selects 10000 random rows for test data
 set.seed(12345)
 test_set <- sample(1:nrow(tele_norm), 10000) 
@@ -74,8 +115,9 @@ tele_test_labels <- tele_norm[test_set, "yyes"]
 
 > Now you are ready to build your ANN model. Feel free to modify the data load, cleaning and preparation code above as per your preference.
 
-## Get Train and Test Samples for ANN
+## Get Train and Test Samples for ANN for Cluster 1
 ```{r}
+# TODO - THIS IS NOT CLUSTER 1 DATA
 set.seed(12345)
 
 tele_sample<- sample(1:nrow(tele_norm), 10000)
@@ -83,8 +125,9 @@ tele_test <- tele_norm[tele_sample,]
 tele_train <- tele_norm[-tele_sample,]
 ```
 
-## Train an ANN model on telemarketing data
+## Train an ANN model on Cluster 1 Data
 ```{r, cache=T}
+# TODO - THIS IS NOT CLUSTER 1 DATA
 library(neuralnet)
 
 tele_model <- neuralnet(formula = yyes~.,
