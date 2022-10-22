@@ -85,6 +85,7 @@ Therefore we can now just make models for the 1st, 2nd, and 5th clusters to impr
 # Create Cluster Variables
 ```{r}
 cluster1_norm <- tele_norm[tele_norm$cluster == 1,]
+cluster1_norm_df <- as.data.frame(model.matrix(~.-1,cluster1_norm))
 cluster2_norm <- tele_norm[tele_norm$cluster == 2,]
 cluster5_norm <- tele_norm[tele_norm$cluster == 5,]
 ```
@@ -124,6 +125,98 @@ tele_sample<- sample(1:nrow(tele_norm), 10000)
 tele_test <- tele_norm[tele_sample,]
 tele_train <- tele_norm[-tele_sample,]
 ```
+
+## ANN function
+```{r}
+ANN_func <- function(cluster_norm) {
+  set.seed(12345)
+  cluster_sample <- sample(1:nrow(cluster_norm), floor(0.3 * nrow(cluster_norm))) # 30% size of cluster_norm to use for sample
+  cluster_test <- cluster_norm[-cluster_sample,] # 70% for test
+  cluster_train <- cluster_norm[cluster_sample,]
+  
+  library(caret)
+  
+  func_model <- neuralnet(formula = yyes~., data = cluster_train, hidden = 1)
+  
+  func_prediction <- predict(func_model, newdata = cluster_test, type = "response")
+  func_prediction <- ifelse(func_prediction < 0.5, 0, 1)
+  ret_val <- confusionMatrix(as.factor(cluster_test$yyes), as.factor(func_prediction))
+  
+  return(ret_val)
+}
+
+result <- ANN_func(cluster1_norm)
+```
+## Logistics Model Function
+```{r}
+LM_func <- function(cluster_norm) {
+  ret_val <- glm(yyes ~ ., data = cluster_norm, family = "binomial")
+  return(ret_val)
+}
+
+lm_result <- LM_func(cluster1_norm)
+```
+
+## Debugging
+```{r}
+cluster_norm <- cluster1_norm
+cluster_reg <- tele_norm[tele_norm$cluster == 1,]
+
+  set.seed(12345)
+  cluster_sample <- sample(1:nrow(cluster_norm), floor(0.3 * nrow(cluster_norm))) # 30% size of cluster_norm to use for sample
+  cluster_test <- cluster_norm[-cluster_sample,] # 70% for test
+  cluster_train <- cluster_norm[cluster_sample,]
+  
+  cluster_train_labels <- cluster_reg[-cluster_test, "yyes"]
+  cluster_test_labels <- cluster_reg[cluster_test, "yyes"]
+  
+  library(class)
+  library(caret)
+  
+  k_val <- sqrt(nrow(cluster_train))
+  
+  cluster_train$yyes <- NULL
+  cluster_test$yyes <- NULL
+  
+  cluster_test_pred <- knn(train = cluster_train, test = cluster_test, cl = cluster_train_labels, k = k_val)
+  library(gmodels)
+  CrossTable(x = cluster_test_labels, y = cluster_test_pred, prop.chisq = FALSE)
+```
+
+
+
+## KNN Model Function
+```{r}
+KNN_func <- function(cluster_norm) {
+  set.seed(12345)
+  cluster_sample <- sample(1:nrow(cluster_norm), floor(0.3 * nrow(cluster_norm))) # 30% size of cluster_norm to use for sample
+  cluster_test <- cluster_norm[-cluster_sample,] # 70% for test
+  cluster_train <- cluster_norm[cluster_sample,]
+  
+  cluster_train_labels <- cluster_norm[-cluster_test, c("yyes")]
+  cluster_test_labels <- cluster_norm[cluster_test, c("yyes")]
+  
+  library(class)
+  library(caret)
+  
+  k_val <- sqrt(nrow(cluster_train))
+  
+  cluster_train$yyes <- NULL
+  cluster_test$yyes <- NULL
+  
+  cluster_test_pred <- knn(train = cluster_train, test = cluster_test, cl = cluster_train_labels, k = k_val)
+  library(gmodels)
+  CrossTable(x = cluster_test_labels, y = cluster_test_pred, prop.chisq = FALSE)
+  
+}
+
+# cluster_for_KNN <- as.data.frame(lapply(cluster1_norm[1:ncol(cluster1_norm)], normalize))
+
+fkjdsl <- KNN_func(cluster1_norm)
+```
+
+
+
 
 ## Train an ANN model on Cluster 1 Data
 ```{r, cache=T}
