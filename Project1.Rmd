@@ -90,11 +90,7 @@ cluster5_norm <- tele_norm[tele_norm$cluster == 5,]
 str(cluster1_norm)
 str(cluster2_norm)
 str(cluster5_norm)
-
 ```
-
-
-TODO - EVERYTHING BELOW HERE! MODELS FOR CLUSTERS 1, 2, AND 5 - AND THEN THE PREDICTION WORK AS WELL AS THE EXPLANATION AT THE END
 
 ## Getting Train and Test Samples for KNN Cluster 1
 
@@ -118,16 +114,6 @@ tele_test_labels <- tele_norm[test_set, "yyes"]
 ```
 
 > Now you are ready to build your ANN model. Feel free to modify the data load, cleaning and preparation code above as per your preference.
-
-## Get Train and Test Samples for ANN for Cluster 1
-```{r}
-# # TODO - THIS IS NOT CLUSTER 1 DATA
-# set.seed(12345)
-# 
-# tele_sample<- sample(1:nrow(tele_norm), 10000)
-# tele_test <- tele_norm[tele_sample,]
-# tele_train <- tele_norm[-tele_sample,]
-```
 
 ## ANN function
 ```{r}
@@ -167,71 +153,38 @@ LM_func <- function(cluster_norm) {
   confusionMatrix(as.factor(cluster_test$yyes), as.factor(glm_Prediction))
 }
 ```
-
-## Debugging
+## KNN Model Function
 ```{r}
+KNN_func <- function(cluster_norm){
+  
+
 library(class)
 library(caret)
 library(gmodels)
+set.seed(12345)
 
-cluster_norm <- cluster1_norm
+# just renamed indices variable
+test_indices <- sample(1:nrow(cluster_norm), floor(0.3 * nrow(cluster_norm)))
+cluster_train <- cluster_norm[-test_indices,] # 70% for test
+cluster_test <- cluster_norm[test_indices,]
 
-# dummy_data = as.data.frame(model.matrix(~.-1, tele_random))
-
-
-  set.seed(12345)
-  cluster_sample <- sample(1:nrow(cluster_norm), 3000) # 30% size of cluster_norm to use for sample
-  cluster_test <- cluster_norm[-cluster_sample,] # 70% for test
-  cluster_train <- cluster_norm[cluster_sample,]
-
-  cluster_test_labels <- cluster_norm[-cluster_sample, "yyes"]
-  cluster_train_labels <- cluster_norm[cluster_sample, "yyes"]
-  
+#labels must be the same length so get them from cluster1_norm
+cluster_train_labels <- cluster_norm[-test_indices, "yyes"]
+cluster_test_labels <- cluster_norm[test_indices, "yyes"]
 
 
+#this cluster as a hwhole tends to have yyes = 0, so I set the k-val arbitrarily to a low number to be able to predict 1's - From Jake in OH
+k_val <- 1
 
-  k_val <- sqrt(nrow(cluster_train))
+cluster_train$yyes <- NULL
+cluster_test$yyes <- NULL
 
-  cluster_train$yyes <- NULL
-  cluster_test$yyes <- NULL
+cluster_test_pred <- knn(train = cluster_train, test = cluster_test, cl = cluster_train_labels, k = k_val)
 
-  cluster_test_pred <- knn(train = cluster_train, test = cluster_test, cl = cluster_train_labels, k = k_val)
-  CrossTable(x = cluster_test_labels, y = cluster_test_pred, prop.chisq = FALSE)
-  confusionMatrix(as.factor(cluster_test$yyes), as.factor(cluster_test_pred))
+CrossTable(x = cluster_test_labels, y = cluster_test_pred, prop.chisq = FALSE)
+}
+KNN_func(cluster1_norm)
 ```
-
-
-
-## KNN Model Function
-```{r}
-# KNN_func <- function(cluster_norm) {
-#   set.seed(12345)
-#   cluster_sample <- sample(1:nrow(cluster_norm), floor(0.3 * nrow(cluster_norm))) # 30% size of cluster_norm to use for sample
-#   cluster_test <- cluster_norm[-cluster_sample,] # 70% for test
-#   cluster_train <- cluster_norm[cluster_sample,]
-#   
-#   cluster_train_labels <- cluster_norm[-cluster_test, c("yyes")]
-#   cluster_test_labels <- cluster_norm[cluster_test, c("yyes")]
-#   
-#   library(class)
-#   library(caret)
-#   
-#   k_val <- sqrt(nrow(cluster_train))
-#   
-#   cluster_train$yyes <- NULL
-#   cluster_test$yyes <- NULL
-#   
-#   cluster_test_pred <- knn(train = cluster_train, test = cluster_test, cl = cluster_train_labels, k = k_val)
-#   library(gmodels)
-#   CrossTable(x = cluster_test_labels, y = cluster_test_pred, prop.chisq = FALSE)
-#   
-# }
-# 
-# # cluster_for_KNN <- as.data.frame(lapply(cluster1_norm[1:ncol(cluster1_norm)], normalize))
-# 
-# fkjdsl <- KNN_func(cluster1_norm)
-```
-
 
 ## Why we aren't using KNN
 ```{}
@@ -243,17 +196,20 @@ Our KNN function is failing with an error. We went to OH with Jake. He couldn't 
 ```{r, cache=T}
 ANN_func(cluster_norm = cluster1_norm)
 LM_func(cluster_norm = cluster1_norm)
+KNN_func(cluster_norm = cluster1_norm)
 ```
 ## Compare ANN and LM on Cluster 2
 ```{r, cache=T}
 ANN_func(cluster_norm = cluster2_norm)
 LM_func(cluster_norm = cluster2_norm)
+KNN_func(cluster_norm = cluster2_norm)
 ```
 
 ## Compare ANN and LM on Cluster 5
 ```{r, cache=T}
 ANN_func(cluster_norm = cluster5_norm)
 LM_func(cluster_norm = cluster5_norm)
+KNN_func(cluster_norm = cluster5_norm)
 ```
 ## LM and ANN Analysis
 ```{}
