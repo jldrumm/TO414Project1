@@ -170,32 +170,34 @@ LM_func <- function(cluster_norm) {
 
 ## Debugging
 ```{r}
-#  library(class)
-#   library(caret)
-# 
-# cluster_norm <- cluster1_norm
-# 
+library(class)
+library(caret)
+library(gmodels)
+
+cluster_norm <- cluster1_norm
+
 # dummy_data = as.data.frame(model.matrix(~.-1, tele_random))
-# 
-# 
-#   set.seed(12345)
-#   cluster_sample <- sample(1:nrow(cluster_norm), 3000) # 30% size of cluster_norm to use for sample
-#   cluster_test <- cluster_norm[-cluster_sample,] # 70% for test
-#   cluster_train <- cluster_norm[cluster_sample,]
-# 
-#   cluster_train_labels <- dummy_data[-cluster_test, "yyes"]
-#   cluster_test_labels <- dummy_data[cluster_test, "yyes"]
-# 
-# 
-# 
-#   k_val <- sqrt(nrow(cluster_train))
-# 
-#   cluster_train$yyes <- NULL
-#   cluster_test$yyes <- NULL
-# 
-#   cluster_test_pred <- knn(train = cluster_train, test = cluster_test, cl = cluster_train_labels, k = k_val)
-#   library(gmodels)
-#   CrossTable(x = cluster_test_labels, y = cluster_test_pred, prop.chisq = FALSE)
+
+
+  set.seed(12345)
+  cluster_sample <- sample(1:nrow(cluster_norm), 3000) # 30% size of cluster_norm to use for sample
+  cluster_test <- cluster_norm[-cluster_sample,] # 70% for test
+  cluster_train <- cluster_norm[cluster_sample,]
+
+  cluster_test_labels <- cluster_norm[-cluster_sample, "yyes"]
+  cluster_train_labels <- cluster_norm[cluster_sample, "yyes"]
+  
+
+
+
+  k_val <- sqrt(nrow(cluster_train))
+
+  cluster_train$yyes <- NULL
+  cluster_test$yyes <- NULL
+
+  cluster_test_pred <- knn(train = cluster_train, test = cluster_test, cl = cluster_train_labels, k = k_val)
+  CrossTable(x = cluster_test_labels, y = cluster_test_pred, prop.chisq = FALSE)
+  confusionMatrix(as.factor(cluster_test$yyes), as.factor(cluster_test_pred))
 ```
 
 
