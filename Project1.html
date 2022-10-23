@@ -371,6 +371,10 @@ Hatzer, Jonah Cuenca</h4>
 </div>
 
 
+<div id="cost-benefit-analysis" class="section level2">
+<h2>Cost Benefit Analysis</h2>
+<pre><code>We will begin our report by starting with a cost-benefit analysis for the Telemarketing company. Because each call costs $1 for the company and each successful sale results in $6 of profit that means to at least break even 1 out of every 6 calls (16.67%) needs to be a successful sale. Therefore, our goal will be to create a prediction model which will result in at least 16.67% of the recommended calls being successful, thus ensuring the company breaks even, which is all they are concerned about according to knowledge given in class. </code></pre>
+</div>
 <div id="downloading-and-prepping-the-data" class="section level2">
 <h2>Downloading and Prepping the Data</h2>
 <pre class="r"><code>#Downloading and Prepping the Data
@@ -531,8 +535,8 @@ normalize &lt;- function(x) {
 # we are going to normalize everything 
 tele_norm &lt;- as.data.frame(lapply(tele_random, normalize))</code></pre>
 </div>
-<div id="starting-with-clustering-analysis" class="section level2">
-<h2>Starting with Clustering Analysis</h2>
+<div id="starting-with-clustering" class="section level2">
+<h2>Starting With Clustering</h2>
 <pre class="r"><code>categories &lt;- tele_norm #tele_norm is normalized using the normalize function we wrote 
 categories$yyes &lt;- NULL
 
@@ -609,9 +613,7 @@ tele_clusters$centers</code></pre>
 ## 5    -0.06909818    0.29279233  0.4332169   0.4757424  -0.195413</code></pre>
 <pre class="r"><code>tele_norm$cluster &lt;- tele_clusters$cluster # put the cluster number with each tele record - leave clusters as numbers
 
-# figure out how to get the yyes for a cluster
-#tele$y_num &lt;- ifelse(tele$y==&quot;yes&quot;, 1, 0)
-aggregate(data = tele_norm, yyes ~ cluster, mean) # this gives the success rate at this point</code></pre>
+aggregate(data = tele_norm, yyes ~ cluster, mean) # this gives the success rate</code></pre>
 <pre><code>##   cluster       yyes
 ## 1       1 0.03814714
 ## 2       2 0.05762849
@@ -619,9 +621,194 @@ aggregate(data = tele_norm, yyes ~ cluster, mean) # this gives the success rate 
 ## 4       4 0.63702240
 ## 5       5 0.06291016</code></pre>
 </div>
-<div id="getting-train-and-test-samples" class="section level2">
-<h2>Getting Train and Test Samples</h2>
-<pre class="r"><code># Selects 10000 random rows for test data
+<div id="clustering-analysis" class="section level1">
+<h1>Clustering Analysis</h1>
+<pre><code>After doing the clustering analysis we have determined that no models should be created for clusters 3 and 4 because they have a success rate of 19.52% and 63.70% respectively. Based on the cost-benefit analysis done above both of these clusters would be profitable without any additional modeling work needing to be done, because as discussed above if we can get an accuracy of 16.67% or better than we will at least break even. 
+
+Therefore we can now just make models for the 1st, 2nd, and 5th clusters to improve the accuracy when calling indidviduals in those clusters. </code></pre>
+</div>
+<div id="create-cluster-variables" class="section level1">
+<h1>Create Cluster Variables</h1>
+<pre class="r"><code>cluster1_norm &lt;- tele_norm[tele_norm$cluster == 1,]
+cluster2_norm &lt;- tele_norm[tele_norm$cluster == 2,]
+cluster5_norm &lt;- tele_norm[tele_norm$cluster == 5,]
+str(cluster1_norm)</code></pre>
+<pre><code>## &#39;data.frame&#39;:    11377 obs. of  55 variables:
+##  $ age                         : num  0.185 0.247 0.222 0.432 0.185 ...
+##  $ jobadmin.                   : num  1 1 1 0 1 0 0 0 1 0 ...
+##  $ jobblue.collar              : num  0 0 0 0 0 0 0 1 0 0 ...
+##  $ jobentrepreneur             : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobhousemaid                : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobmanagement               : num  0 0 0 0 0 0 1 0 0 0 ...
+##  $ jobretired                  : num  0 0 0 1 0 0 0 0 0 0 ...
+##  $ jobself.employed            : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobservices                 : num  0 0 0 0 0 0 0 0 0 1 ...
+##  $ jobstudent                  : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobtechnician               : num  0 0 0 0 0 1 0 0 0 0 ...
+##  $ jobunemployed               : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobunknown                  : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ maritalmarried              : num  1 1 1 1 0 1 1 1 1 1 ...
+##  $ maritalsingle               : num  0 0 0 0 1 0 0 0 0 0 ...
+##  $ maritalunknown              : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ educationbasic.6y           : num  0 0 0 0 0 0 0 1 0 0 ...
+##  $ educationbasic.9y           : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ educationhigh.school        : num  1 0 0 1 1 0 0 0 0 1 ...
+##  $ educationilliterate         : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ educationprofessional.course: num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ educationuniversity.degree  : num  0 1 1 0 0 1 1 0 1 0 ...
+##  $ educationunknown            : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ defaultunknown              : num  0 1 0 0 0 0 0 1 0 1 ...
+##  $ defaultyes                  : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ housingunknown              : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ housingyes                  : num  0 1 0 0 0 1 0 0 1 1 ...
+##  $ loanunknown                 : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ loanyes                     : num  0 0 0 0 0 0 0 0 1 1 ...
+##  $ contacttelephone            : num  1 1 1 1 1 1 1 1 1 1 ...
+##  $ monthaug                    : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ monthdec                    : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ monthjul                    : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ monthjun                    : num  1 0 0 1 0 0 1 1 0 0 ...
+##  $ monthmar                    : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ monthmay                    : num  0 1 1 0 1 1 0 0 1 1 ...
+##  $ monthnov                    : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ monthoct                    : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ monthsep                    : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ day_of_weekmon              : num  0 1 0 0 0 0 0 0 0 1 ...
+##  $ day_of_weekthu              : num  0 0 0 1 0 0 0 0 1 0 ...
+##  $ day_of_weektue              : num  0 0 1 0 0 0 0 0 0 0 ...
+##  $ day_of_weekwed              : num  1 0 0 0 1 0 1 1 0 0 ...
+##  $ campaign                    : num  0 0 0 0.0182 0.0182 ...
+##  $ previous                    : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ poutcomenonexistent         : num  1 1 1 1 1 1 1 1 1 1 ...
+##  $ poutcomesuccess             : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ emp.var.rate                : num  1 0.938 0.938 1 0.938 ...
+##  $ cons.price.idx              : num  0.882 0.699 0.699 0.882 0.699 ...
+##  $ cons.conf.idx               : num  0.377 0.603 0.603 0.377 0.603 ...
+##  $ euribor3m                   : num  0.981 0.957 0.957 0.959 0.958 ...
+##  $ nr.employed                 : num  1 0.86 0.86 1 0.86 ...
+##  $ yyes                        : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ pdaysdummy                  : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ cluster                     : int  1 1 1 1 1 1 1 1 1 1 ...</code></pre>
+<pre class="r"><code>str(cluster2_norm)</code></pre>
+<pre><code>## &#39;data.frame&#39;:    12355 obs. of  55 variables:
+##  $ age                         : num  0.148 0.235 0.185 0.333 0.457 ...
+##  $ jobadmin.                   : num  0 1 0 0 0 0 1 0 0 0 ...
+##  $ jobblue.collar              : num  1 0 0 0 0 0 0 0 1 1 ...
+##  $ jobentrepreneur             : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobhousemaid                : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobmanagement               : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobretired                  : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobself.employed            : num  0 0 1 0 0 0 0 1 0 0 ...
+##  $ jobservices                 : num  0 0 0 0 0 1 0 0 0 0 ...
+##  $ jobstudent                  : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobtechnician               : num  0 0 0 1 0 0 0 0 0 0 ...
+##  $ jobunemployed               : num  0 0 0 0 1 0 0 0 0 0 ...
+##  $ jobunknown                  : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ maritalmarried              : num  1 0 1 0 1 1 1 1 1 0 ...
+##  $ maritalsingle               : num  0 1 0 1 0 0 0 0 0 1 ...
+##  $ maritalunknown              : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ educationbasic.6y           : num  0 0 0 0 0 0 0 0 1 0 ...
+##  $ educationbasic.9y           : num  0 0 0 0 0 0 0 0 0 1 ...
+##  $ educationhigh.school        : num  1 0 1 0 0 1 0 0 0 0 ...
+##  $ educationilliterate         : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ educationprofessional.course: num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ educationuniversity.degree  : num  0 1 0 1 1 0 1 1 0 0 ...
+##  $ educationunknown            : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ defaultunknown              : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ defaultyes                  : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ housingunknown              : num  0 0 0 0 0 1 0 0 1 0 ...
+##  $ housingyes                  : num  1 1 1 0 1 0 0 0 0 1 ...
+##  $ loanunknown                 : num  0 0 0 0 0 1 0 0 1 0 ...
+##  $ loanyes                     : num  0 1 0 1 0 0 1 1 0 0 ...
+##  $ contacttelephone            : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ monthaug                    : num  0 0 1 0 0 0 1 1 0 0 ...
+##  $ monthdec                    : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ monthjul                    : num  0 0 0 1 1 1 0 0 0 1 ...
+##  $ monthjun                    : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ monthmar                    : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ monthmay                    : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ monthnov                    : num  1 1 0 0 0 0 0 0 1 0 ...
+##  $ monthoct                    : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ monthsep                    : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ day_of_weekmon              : num  0 0 0 0 0 1 0 0 0 1 ...
+##  $ day_of_weekthu              : num  1 0 1 0 1 0 0 0 0 0 ...
+##  $ day_of_weektue              : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ day_of_weekwed              : num  0 1 0 0 0 0 1 0 1 0 ...
+##  $ campaign                    : num  0 0 0.1455 0.0182 0.0182 ...
+##  $ previous                    : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ poutcomenonexistent         : num  1 1 1 1 1 1 1 1 1 1 ...
+##  $ poutcomesuccess             : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ emp.var.rate                : num  0.688 0.688 1 1 1 ...
+##  $ cons.price.idx              : num  0.389 0.389 0.484 0.669 0.669 ...
+##  $ cons.conf.idx               : num  0.368 0.368 0.615 0.339 0.339 ...
+##  $ euribor3m                   : num  0.78 0.79 0.981 0.981 0.981 ...
+##  $ nr.employed                 : num  0.878 0.878 1 1 1 ...
+##  $ yyes                        : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ pdaysdummy                  : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ cluster                     : int  2 2 2 2 2 2 2 2 2 2 ...</code></pre>
+<pre class="r"><code>str(cluster5_norm)</code></pre>
+<pre><code>## &#39;data.frame&#39;:    4419 obs. of  55 variables:
+##  $ age                         : num  0.2716 0.2346 0.0988 0.2099 0.3704 ...
+##  $ jobadmin.                   : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobblue.collar              : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobentrepreneur             : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobhousemaid                : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobmanagement               : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobretired                  : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobself.employed            : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobservices                 : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobstudent                  : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobtechnician               : num  1 1 1 1 1 1 1 1 1 1 ...
+##  $ jobunemployed               : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ jobunknown                  : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ maritalmarried              : num  1 0 0 0 1 1 0 0 1 1 ...
+##  $ maritalsingle               : num  0 1 1 1 0 0 1 1 0 0 ...
+##  $ maritalunknown              : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ educationbasic.6y           : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ educationbasic.9y           : num  0 0 0 0 0 0 0 0 1 0 ...
+##  $ educationhigh.school        : num  0 1 0 0 0 0 0 0 0 1 ...
+##  $ educationilliterate         : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ educationprofessional.course: num  1 0 1 0 1 1 1 0 0 0 ...
+##  $ educationuniversity.degree  : num  0 0 0 1 0 0 0 1 0 0 ...
+##  $ educationunknown            : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ defaultunknown              : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ defaultyes                  : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ housingunknown              : num  0 0 0 0 0 0 0 0 0 1 ...
+##  $ housingyes                  : num  1 0 0 1 1 0 1 0 0 0 ...
+##  $ loanunknown                 : num  0 0 0 0 0 0 0 0 0 1 ...
+##  $ loanyes                     : num  0 0 1 1 0 1 0 0 1 0 ...
+##  $ contacttelephone            : num  1 0 0 0 0 0 1 0 0 0 ...
+##  $ monthaug                    : num  0 1 0 1 0 0 0 0 0 1 ...
+##  $ monthdec                    : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ monthjul                    : num  0 0 0 0 1 0 1 0 0 0 ...
+##  $ monthjun                    : num  1 0 0 0 0 0 0 0 0 0 ...
+##  $ monthmar                    : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ monthmay                    : num  0 0 0 0 0 1 0 0 0 0 ...
+##  $ monthnov                    : num  0 0 0 0 0 0 0 1 1 0 ...
+##  $ monthoct                    : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ monthsep                    : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ day_of_weekmon              : num  0 0 1 0 0 0 0 1 0 0 ...
+##  $ day_of_weekthu              : num  0 0 0 1 0 0 1 0 0 0 ...
+##  $ day_of_weektue              : num  0 1 0 0 0 0 0 0 0 1 ...
+##  $ day_of_weekwed              : num  1 0 0 0 0 1 0 0 1 0 ...
+##  $ campaign                    : num  0.0364 0 0.0545 0 0.0727 ...
+##  $ previous                    : num  0 0 0 0 0 ...
+##  $ poutcomenonexistent         : num  1 1 1 1 1 1 1 1 0 1 ...
+##  $ poutcomesuccess             : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ emp.var.rate                : num  1 1 0.333 1 1 ...
+##  $ cons.price.idx              : num  0.882 0.484 0.341 0.484 0.669 ...
+##  $ cons.conf.idx               : num  0.377 0.615 0.155 0.615 0.339 ...
+##  $ euribor3m                   : num  0.981 0.981 0.189 0.982 0.98 ...
+##  $ nr.employed                 : num  1 1 0.512 1 1 ...
+##  $ yyes                        : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ pdaysdummy                  : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ cluster                     : int  5 5 5 5 5 5 5 5 5 5 ...</code></pre>
+<p>TODO - EVERYTHING BELOW HERE! MODELS FOR CLUSTERS 1, 2, AND 5 - AND
+THEN THE PREDICTION WORK AS WELL AS THE EXPLANATION AT THE END</p>
+<div id="getting-train-and-test-samples-for-knn-cluster-1" class="section level2">
+<h2>Getting Train and Test Samples for KNN Cluster 1</h2>
+<pre class="r"><code># TODO - THIS IS NOT CLUSTER 1 DATA
+# Selects 10000 random rows for test data
 set.seed(12345)
 test_set &lt;- sample(1:nrow(tele_norm), 10000) 
 # Depending on R-version and computer, different rows may be selected. 
@@ -641,60 +828,402 @@ data load, cleaning and preparation code above as per your
 preference.</p>
 </blockquote>
 </div>
-<div id="get-train-and-test-samples-for-ann" class="section level2">
-<h2>Get Train and Test Samples for ANN</h2>
-<pre class="r"><code>set.seed(12345)
-
-tele_sample&lt;- sample(1:nrow(tele_norm), 10000)
-tele_test &lt;- tele_norm[tele_sample,]
-tele_train &lt;- tele_norm[-tele_sample,]</code></pre>
+<div id="get-train-and-test-samples-for-ann-for-cluster-1" class="section level2">
+<h2>Get Train and Test Samples for ANN for Cluster 1</h2>
+<pre class="r"><code># # TODO - THIS IS NOT CLUSTER 1 DATA
+# set.seed(12345)
+# 
+# tele_sample&lt;- sample(1:nrow(tele_norm), 10000)
+# tele_test &lt;- tele_norm[tele_sample,]
+# tele_train &lt;- tele_norm[-tele_sample,]</code></pre>
 </div>
-<div id="train-an-ann-model-on-telemarketing-data" class="section level2">
-<h2>Train an ANN model on telemarketing data</h2>
-<pre class="r"><code>library(neuralnet)
-
-tele_model &lt;- neuralnet(formula = yyes~.,
-                              data = tele_train, hidden = 1)
-
-# hidden = c(9,7,4)</code></pre>
+<div id="ann-function" class="section level2">
+<h2>ANN function</h2>
+<pre class="r"><code>ANN_func &lt;- function(cluster_norm) {
+  # cluster_norm$cluster &lt;- NULL
+  set.seed(12345)
+  cluster_sample &lt;- sample(1:nrow(cluster_norm), floor(0.3 * nrow(cluster_norm))) # 30% size of cluster_norm to use for sample
+  cluster_test &lt;- cluster_norm[-cluster_sample,] # 70% for test
+  cluster_train &lt;- cluster_norm[cluster_sample,]
+  
+  library(caret)
+  library(neuralnet)
+  
+  func_model &lt;- neuralnet(formula = yyes~., data = cluster_train, hidden = 2)
+  
+  func_prediction &lt;- predict(func_model, newdata = cluster_test, type = &quot;response&quot;)
+  func_prediction &lt;- ifelse(func_prediction &lt; 0.5, 0, 1)
+  confusionMatrix(as.factor(cluster_test$yyes), as.factor(func_prediction))
+}</code></pre>
 </div>
-<div id="evaluate-ann-model-performance" class="section level2">
-<h2>Evaluate ANN model performance</h2>
-<pre class="r"><code>library(caret)</code></pre>
+<div id="logistics-model-function" class="section level2">
+<h2>Logistics Model Function</h2>
+<pre class="r"><code>LM_func &lt;- function(cluster_norm) {
+  library(gmodels)
+  set.seed(12345)
+  cluster_sample &lt;- sample(1:nrow(cluster_norm), floor(0.3 * nrow(cluster_norm))) # 30% size of cluster_norm to use for sample
+  cluster_test &lt;- cluster_norm[-cluster_sample,] # 70% for test
+  cluster_train &lt;- cluster_norm[cluster_sample,]
+  
+  cluster_model &lt;- glm(yyes ~ ., data = cluster_train, family = &quot;binomial&quot;)
+  
+  glm_Prediction &lt;- predict(cluster_model, newdata = cluster_test, type = &quot;response&quot;)
+  glm_Prediction &lt;- ifelse(glm_Prediction &lt; 0.5, 0, 1)
+
+  CrossTable(x = cluster_test$yyes, y = glm_Prediction, prop.chisq = F)
+  confusionMatrix(as.factor(cluster_test$yyes), as.factor(glm_Prediction))
+}</code></pre>
+</div>
+<div id="debugging" class="section level2">
+<h2>Debugging</h2>
+<pre class="r"><code>#  library(class)
+#   library(caret)
+# 
+# cluster_norm &lt;- cluster1_norm
+# 
+# dummy_data = as.data.frame(model.matrix(~.-1, tele_random))
+# 
+# 
+#   set.seed(12345)
+#   cluster_sample &lt;- sample(1:nrow(cluster_norm), 3000) # 30% size of cluster_norm to use for sample
+#   cluster_test &lt;- cluster_norm[-cluster_sample,] # 70% for test
+#   cluster_train &lt;- cluster_norm[cluster_sample,]
+# 
+#   cluster_train_labels &lt;- dummy_data[-cluster_test, &quot;yyes&quot;]
+#   cluster_test_labels &lt;- dummy_data[cluster_test, &quot;yyes&quot;]
+# 
+# 
+# 
+#   k_val &lt;- sqrt(nrow(cluster_train))
+# 
+#   cluster_train$yyes &lt;- NULL
+#   cluster_test$yyes &lt;- NULL
+# 
+#   cluster_test_pred &lt;- knn(train = cluster_train, test = cluster_test, cl = cluster_train_labels, k = k_val)
+#   library(gmodels)
+#   CrossTable(x = cluster_test_labels, y = cluster_test_pred, prop.chisq = FALSE)</code></pre>
+</div>
+<div id="knn-model-function" class="section level2">
+<h2>KNN Model Function</h2>
+<pre class="r"><code># KNN_func &lt;- function(cluster_norm) {
+#   set.seed(12345)
+#   cluster_sample &lt;- sample(1:nrow(cluster_norm), floor(0.3 * nrow(cluster_norm))) # 30% size of cluster_norm to use for sample
+#   cluster_test &lt;- cluster_norm[-cluster_sample,] # 70% for test
+#   cluster_train &lt;- cluster_norm[cluster_sample,]
+#   
+#   cluster_train_labels &lt;- cluster_norm[-cluster_test, c(&quot;yyes&quot;)]
+#   cluster_test_labels &lt;- cluster_norm[cluster_test, c(&quot;yyes&quot;)]
+#   
+#   library(class)
+#   library(caret)
+#   
+#   k_val &lt;- sqrt(nrow(cluster_train))
+#   
+#   cluster_train$yyes &lt;- NULL
+#   cluster_test$yyes &lt;- NULL
+#   
+#   cluster_test_pred &lt;- knn(train = cluster_train, test = cluster_test, cl = cluster_train_labels, k = k_val)
+#   library(gmodels)
+#   CrossTable(x = cluster_test_labels, y = cluster_test_pred, prop.chisq = FALSE)
+#   
+# }
+# 
+# # cluster_for_KNN &lt;- as.data.frame(lapply(cluster1_norm[1:ncol(cluster1_norm)], normalize))
+# 
+# fkjdsl &lt;- KNN_func(cluster1_norm)</code></pre>
+</div>
+<div id="why-we-arent-using-knn" class="section level2">
+<h2>Why we aren’t using KNN</h2>
+<pre><code>Our KNN function is failing with an error. We went to OH with Jake. He couldn&#39;t figure out the issue wither and told us to complete the project without using KNN.</code></pre>
+</div>
+<div id="compare-ann-and-lm-on-cluster-1" class="section level2">
+<h2>Compare ANN and LM on Cluster 1</h2>
+<pre class="r"><code>ANN_func(cluster_norm = cluster1_norm)</code></pre>
 <pre><code>## Loading required package: ggplot2</code></pre>
 <pre><code>## Loading required package: lattice</code></pre>
-<pre class="r"><code>plot(tele_model)
-tele_prediction &lt;- predict(tele_model, newdata = tele_test, type = &quot;response&quot;)
-tele_prediction &lt;- ifelse(tele_prediction &lt; 0.5, 0, 1)
-
-confusionMatrix(as.factor(tele_test$yyes), as.factor(tele_prediction))</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
 ## Prediction    0    1
-##          0 8721  130
-##          1  893  256
+##          0 7631   40
+##          1  282   11
+##                                          
+##                Accuracy : 0.9596         
+##                  95% CI : (0.955, 0.9638)
+##     No Information Rate : 0.9936         
+##     P-Value [Acc &gt; NIR] : 1              
+##                                          
+##                   Kappa : 0.0536         
+##                                          
+##  Mcnemar&#39;s Test P-Value : &lt;2e-16         
+##                                          
+##             Sensitivity : 0.96436        
+##             Specificity : 0.21569        
+##          Pos Pred Value : 0.99479        
+##          Neg Pred Value : 0.03754        
+##              Prevalence : 0.99360        
+##          Detection Rate : 0.95819        
+##    Detection Prevalence : 0.96321        
+##       Balanced Accuracy : 0.59002        
+##                                          
+##        &#39;Positive&#39; Class : 0              
+## </code></pre>
+<pre class="r"><code>LM_func(cluster_norm = cluster1_norm)</code></pre>
+<pre><code>## Warning in predict.lm(object, newdata, se.fit, scale = 1, type = if (type == :
+## prediction from a rank-deficient fit may be misleading</code></pre>
+<pre><code>## 
+##  
+##    Cell Contents
+## |-------------------------|
+## |                       N |
+## |           N / Row Total |
+## |           N / Col Total |
+## |         N / Table Total |
+## |-------------------------|
+## 
+##  
+## Total Observations in Table:  7964 
+## 
+##  
+##                   | glm_Prediction 
+## cluster_test$yyes |         0 |         1 | Row Total | 
+## ------------------|-----------|-----------|-----------|
+##                 0 |      7652 |        19 |      7671 | 
+##                   |     0.998 |     0.002 |     0.963 | 
+##                   |     0.965 |     0.543 |           | 
+##                   |     0.961 |     0.002 |           | 
+## ------------------|-----------|-----------|-----------|
+##                 1 |       277 |        16 |       293 | 
+##                   |     0.945 |     0.055 |     0.037 | 
+##                   |     0.035 |     0.457 |           | 
+##                   |     0.035 |     0.002 |           | 
+## ------------------|-----------|-----------|-----------|
+##      Column Total |      7929 |        35 |      7964 | 
+##                   |     0.996 |     0.004 |           | 
+## ------------------|-----------|-----------|-----------|
+## 
+## </code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    0    1
+##          0 7652   19
+##          1  277   16
 ##                                           
-##                Accuracy : 0.8977          
-##                  95% CI : (0.8916, 0.9036)
-##     No Information Rate : 0.9614          
+##                Accuracy : 0.9628          
+##                  95% CI : (0.9584, 0.9669)
+##     No Information Rate : 0.9956          
 ##     P-Value [Acc &gt; NIR] : 1               
 ##                                           
-##                   Kappa : 0.2927          
+##                   Kappa : 0.0904          
 ##                                           
 ##  Mcnemar&#39;s Test P-Value : &lt;2e-16          
 ##                                           
-##             Sensitivity : 0.9071          
-##             Specificity : 0.6632          
-##          Pos Pred Value : 0.9853          
-##          Neg Pred Value : 0.2228          
-##              Prevalence : 0.9614          
-##          Detection Rate : 0.8721          
-##    Detection Prevalence : 0.8851          
-##       Balanced Accuracy : 0.7852          
+##             Sensitivity : 0.96506         
+##             Specificity : 0.45714         
+##          Pos Pred Value : 0.99752         
+##          Neg Pred Value : 0.05461         
+##              Prevalence : 0.99561         
+##          Detection Rate : 0.96082         
+##    Detection Prevalence : 0.96321         
+##       Balanced Accuracy : 0.71110         
 ##                                           
 ##        &#39;Positive&#39; Class : 0               
 ## </code></pre>
+</div>
+<div id="compare-ann-and-lm-on-cluster-2" class="section level2">
+<h2>Compare ANN and LM on Cluster 2</h2>
+<pre class="r"><code>ANN_func(cluster_norm = cluster2_norm)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    0    1
+##          0 8138   20
+##          1  488    3
+##                                           
+##                Accuracy : 0.9413          
+##                  95% CI : (0.9361, 0.9461)
+##     No Information Rate : 0.9973          
+##     P-Value [Acc &gt; NIR] : 1               
+##                                           
+##                   Kappa : 0.0066          
+##                                           
+##  Mcnemar&#39;s Test P-Value : &lt;2e-16          
+##                                           
+##             Sensitivity : 0.94343         
+##             Specificity : 0.13043         
+##          Pos Pred Value : 0.99755         
+##          Neg Pred Value : 0.00611         
+##              Prevalence : 0.99734         
+##          Detection Rate : 0.94092         
+##    Detection Prevalence : 0.94323         
+##       Balanced Accuracy : 0.53693         
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+<pre class="r"><code>LM_func(cluster_norm = cluster2_norm)</code></pre>
+<pre><code>## Warning in predict.lm(object, newdata, se.fit, scale = 1, type = if (type == :
+## prediction from a rank-deficient fit may be misleading</code></pre>
+<pre><code>## 
+##  
+##    Cell Contents
+## |-------------------------|
+## |                       N |
+## |           N / Row Total |
+## |           N / Col Total |
+## |         N / Table Total |
+## |-------------------------|
+## 
+##  
+## Total Observations in Table:  8649 
+## 
+##  
+##                   | glm_Prediction 
+## cluster_test$yyes |         0 |         1 | Row Total | 
+## ------------------|-----------|-----------|-----------|
+##                 0 |      8156 |         2 |      8158 | 
+##                   |     1.000 |     0.000 |     0.943 | 
+##                   |     0.943 |     0.500 |           | 
+##                   |     0.943 |     0.000 |           | 
+## ------------------|-----------|-----------|-----------|
+##                 1 |       489 |         2 |       491 | 
+##                   |     0.996 |     0.004 |     0.057 | 
+##                   |     0.057 |     0.500 |           | 
+##                   |     0.057 |     0.000 |           | 
+## ------------------|-----------|-----------|-----------|
+##      Column Total |      8645 |         4 |      8649 | 
+##                   |     1.000 |     0.000 |           | 
+## ------------------|-----------|-----------|-----------|
+## 
+## </code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    0    1
+##          0 8156    2
+##          1  489    2
+##                                          
+##                Accuracy : 0.9432         
+##                  95% CI : (0.9381, 0.948)
+##     No Information Rate : 0.9995         
+##     P-Value [Acc &gt; NIR] : 1              
+##                                          
+##                   Kappa : 0.0072         
+##                                          
+##  Mcnemar&#39;s Test P-Value : &lt;2e-16         
+##                                          
+##             Sensitivity : 0.943436       
+##             Specificity : 0.500000       
+##          Pos Pred Value : 0.999755       
+##          Neg Pred Value : 0.004073       
+##              Prevalence : 0.999538       
+##          Detection Rate : 0.942999       
+##    Detection Prevalence : 0.943230       
+##       Balanced Accuracy : 0.721718       
+##                                          
+##        &#39;Positive&#39; Class : 0              
+## </code></pre>
+</div>
+<div id="compare-ann-and-lm-on-cluster-5" class="section level2">
+<h2>Compare ANN and LM on Cluster 5</h2>
+<pre class="r"><code>ANN_func(cluster_norm = cluster5_norm)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    0    1
+##          0 2845   44
+##          1  195   10
+##                                           
+##                Accuracy : 0.9228          
+##                  95% CI : (0.9128, 0.9319)
+##     No Information Rate : 0.9825          
+##     P-Value [Acc &gt; NIR] : 1               
+##                                           
+##                   Kappa : 0.051           
+##                                           
+##  Mcnemar&#39;s Test P-Value : &lt;2e-16          
+##                                           
+##             Sensitivity : 0.93586         
+##             Specificity : 0.18519         
+##          Pos Pred Value : 0.98477         
+##          Neg Pred Value : 0.04878         
+##              Prevalence : 0.98255         
+##          Detection Rate : 0.91952         
+##    Detection Prevalence : 0.93374         
+##       Balanced Accuracy : 0.56052         
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+<pre class="r"><code>LM_func(cluster_norm = cluster5_norm)</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning in predict.lm(object, newdata, se.fit, scale = 1, type = if (type == :
+## prediction from a rank-deficient fit may be misleading</code></pre>
+<pre><code>## 
+##  
+##    Cell Contents
+## |-------------------------|
+## |                       N |
+## |           N / Row Total |
+## |           N / Col Total |
+## |         N / Table Total |
+## |-------------------------|
+## 
+##  
+## Total Observations in Table:  3094 
+## 
+##  
+##                   | glm_Prediction 
+## cluster_test$yyes |         0 |         1 | Row Total | 
+## ------------------|-----------|-----------|-----------|
+##                 0 |      2879 |        10 |      2889 | 
+##                   |     0.997 |     0.003 |     0.934 | 
+##                   |     0.937 |     0.435 |           | 
+##                   |     0.931 |     0.003 |           | 
+## ------------------|-----------|-----------|-----------|
+##                 1 |       192 |        13 |       205 | 
+##                   |     0.937 |     0.063 |     0.066 | 
+##                   |     0.063 |     0.565 |           | 
+##                   |     0.062 |     0.004 |           | 
+## ------------------|-----------|-----------|-----------|
+##      Column Total |      3071 |        23 |      3094 | 
+##                   |     0.993 |     0.007 |           | 
+## ------------------|-----------|-----------|-----------|
+## 
+## </code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    0    1
+##          0 2879   10
+##          1  192   13
+##                                           
+##                Accuracy : 0.9347          
+##                  95% CI : (0.9254, 0.9432)
+##     No Information Rate : 0.9926          
+##     P-Value [Acc &gt; NIR] : 1               
+##                                           
+##                   Kappa : 0.102           
+##                                           
+##  Mcnemar&#39;s Test P-Value : &lt;2e-16          
+##                                           
+##             Sensitivity : 0.93748         
+##             Specificity : 0.56522         
+##          Pos Pred Value : 0.99654         
+##          Neg Pred Value : 0.06341         
+##              Prevalence : 0.99257         
+##          Detection Rate : 0.93051         
+##    Detection Prevalence : 0.93374         
+##       Balanced Accuracy : 0.75135         
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+</div>
+<div id="lm-and-ann-analysis" class="section level2">
+<h2>LM and ANN Analysis</h2>
+<pre><code>Without KNN we cannot do a majority voting scheme, so we need to do our analysis purely based off of ANN and LM models for the chosen clusters.
+
+</code></pre>
+</div>
 </div>
 
 
