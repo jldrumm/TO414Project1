@@ -92,25 +92,15 @@ str(cluster2_norm)
 str(cluster5_norm)
 ```
 
-## Getting Train and Test Samples for KNN Cluster 1
-
+## Create the Majority Voting Scheme
 ```{r}
-# TODO - THIS IS NOT CLUSTER 1 DATA
-# Selects 10000 random rows for test data
-set.seed(12345)
-test_set <- sample(1:nrow(tele_norm), 10000) 
-# Depending on R-version and computer, different rows may be selected. 
-# If that happens, results are different. 
-
-# Create a train set and test set
-#First the predictors - all columns except the yyes column
-tele_train <- tele_norm[-test_set, -match("yyes",names(tele_norm))]
-tele_test <- tele_norm[test_set, -match("yyes",names(tele_norm))]
-
-#Now the response (aka Labels) - only the yyes column
-tele_train_labels <- tele_norm[-test_set, "yyes"]
-tele_test_labels <- tele_norm[test_set, "yyes"]
-
+# Now create the majority voting data frame to be completed as we run the models later
+cluster1_majority_vote <- data.frame(matrix(ncol = 5, nrow = (nrow(cluster1_norm) - floor(0.3 * nrow(cluster1_norm)))))
+colnames(cluster1_majority_vote) <- c("actual", "ANN_predict", "KNN_predict", "LM_predict", "combined_predict")
+cluster2_majority_vote <- data.frame(matrix(ncol = 5, nrow = (nrow(cluster2_norm) - floor(0.3 * nrow(cluster2_norm)))))
+colnames(cluster2_majority_vote) <- c("actual", "ANN_predict", "KNN_predict", "LM_predict", "combined_predict")
+cluster5_majority_vote <- data.frame(matrix(ncol = 5, nrow = (nrow(cluster5_norm) - floor(0.3 * nrow(cluster5_norm)))))
+colnames(cluster5_majority_vote) <- c("actual", "ANN_predict", "KNN_predict", "LM_predict", "combined_predict")
 ```
 
 > Now you are ready to build your ANN model. Feel free to modify the data load, cleaning and preparation code above as per your preference.
@@ -133,6 +123,9 @@ ANN_func <- function(cluster_norm) {
   func_prediction <- predict(func_model, newdata = cluster_test, type = "response")
   func_prediction <- ifelse(func_prediction < 0.5, 0, 1)
   confusionMatrix(as.factor(cluster_test$yyes), as.factor(func_prediction))
+  
+  # return the func_prediction
+  return(as.factor(func_prediction))
 }
 ```
 ## Logistics Model Function
@@ -148,15 +141,16 @@ LM_func <- function(cluster_norm) {
   
   glm_Prediction <- predict(cluster_model, newdata = cluster_test, type = "response")
   glm_Prediction <- ifelse(glm_Prediction < 0.5, 0, 1)
+  summary(glm_Prediction)
 
   CrossTable(x = cluster_test$yyes, y = glm_Prediction, prop.chisq = F)
   confusionMatrix(as.factor(cluster_test$yyes), as.factor(glm_Prediction))
+  return(as.factor(glm_Prediction))
 }
 ```
 ## KNN Model Function
 ```{r}
 KNN_func <- function(cluster_norm){
-  
 
 library(class)
 library(caret)
@@ -165,12 +159,12 @@ set.seed(12345)
 
 # just renamed indices variable
 test_indices <- sample(1:nrow(cluster_norm), floor(0.3 * nrow(cluster_norm)))
-cluster_train <- cluster_norm[-test_indices,] # 70% for test
-cluster_test <- cluster_norm[test_indices,]
+cluster_test <- cluster_norm[-test_indices,] # 70% for test
+cluster_train <- cluster_norm[test_indices,]
 
 #labels must be the same length so get them from cluster1_norm
-cluster_train_labels <- cluster_norm[-test_indices, "yyes"]
-cluster_test_labels <- cluster_norm[test_indices, "yyes"]
+cluster_test_labels <- cluster_norm[-test_indices, "yyes"]
+cluster_train_labels <- cluster_norm[test_indices, "yyes"]
 
 
 #this cluster as a hwhole tends to have yyes = 0, so I set the k-val arbitrarily to a low number to be able to predict 1's - From Jake in OH
@@ -182,34 +176,49 @@ cluster_test$yyes <- NULL
 cluster_test_pred <- knn(train = cluster_train, test = cluster_test, cl = cluster_train_labels, k = k_val)
 
 CrossTable(x = cluster_test_labels, y = cluster_test_pred, prop.chisq = FALSE)
+confusionMatrix(as.factor(cluster_test_labels), as.factor(cluster_test_pred))
+return(as.factor(cluster_test_pred))
 }
-KNN_func(cluster1_norm)
+```
+# Function for setting test values actual for majority voting
+```{r}
+set_majority_actual <- function(cluster_norm){
+  set.seed(12345)
+  cluster_sample <- sample(1:nrow(cluster_norm), floor(0.3 * nrow(cluster_norm))) # 30% size of cluster_norm to use for sample
+  cluster_test <- cluster_norm[-cluster_sample,] # 70% for test
+  return(as.factor(cluster_test$yyes))
+}
 ```
 
-## Why we aren't using KNN
-```{}
-Our KNN function is failing with an error. We went to OH with Jake. He couldn't figure out the issue wither and told us to complete the project without using KNN.
-```
 
-
-## Compare ANN and LM on Cluster 1
+## Compare ANN, LM, KNN, and Majority Voting on Cluster 1
 ```{r, cache=T}
-ANN_func(cluster_norm = cluster1_norm)
-LM_func(cluster_norm = cluster1_norm)
-KNN_func(cluster_norm = cluster1_norm)
+cluster1_majority_vote$ANN_predict <- ANN_func(cluster_norm = cluster1_norm)
+cluster1_majority_vote$LM_predict <- LM_func(cluster_norm = cluster1_norm)
+cluster1_majority_vote$KNN_predict <- KNN_func(cluster_norm = cluster1_norm)
+cluster1_majority_vote$actual <- set_majority_actual(cluster_norm = cluster1_norm)
+cluster1_majority_vote$combined_predict <- as.factor(ifelse(cluster1_majority_vote$ANN_predict == 1 && cluster1_majority_vote$LM_predict == 1, 1, ifelse(cluster1_majority_vote$ANN_predict == 1 && cluster1_majority_vote$KNN_predict == 1, 1, ifelse(cluster1_majority_vote$LM_predict == 1 && cluster1_majority_vote$KNN_predict == 1, 1, 0))))
 ```
-## Compare ANN and LM on Cluster 2
+## Compare ANN, LM, KNN, and Majority Voting on Cluster 2
 ```{r, cache=T}
-ANN_func(cluster_norm = cluster2_norm)
-LM_func(cluster_norm = cluster2_norm)
-KNN_func(cluster_norm = cluster2_norm)
+cluster2_majority_vote$ANN_predict <- ANN_func(cluster_norm = cluster2_norm)
+cluster2_majority_vote$LM_predict <- LM_func(cluster_norm = cluster2_norm)
+# summary(cluster2_majority_vote$LM_predict) - this looks right but for some reason in the environment it shows way more 1's instead of 0's...
+cluster2_majority_vote$LM_predict
+cluster2_majority_vote$KNN_predict <- KNN_func(cluster_norm = cluster2_norm)
+cluster2_majority_vote$actual <- set_majority_actual(cluster_norm = cluster2_norm)
+cluster2_majority_vote$combined_predict <- as.factor(ifelse(cluster2_majority_vote$ANN_predict == 1 && cluster2_majority_vote$LM_predict == 1, 1, ifelse(cluster2_majority_vote$ANN_predict == 1 && cluster2_majority_vote$KNN_predict == 1, 1, ifelse(cluster2_majority_vote$LM_predict == 1 && cluster2_majority_vote$KNN_predict == 1, 1, 0))))
+# print the majority scheme accuracy
+#nrow(cluster2_majority_vote[cluster2_majority_vote$actual == cluster2_majority_vote$combined_predict]) / nrow(cluster2_majority_vote)
 ```
 
-## Compare ANN and LM on Cluster 5
+## Compare ANN, LM, KNN, and Majority Voting on Cluster 5
 ```{r, cache=T}
-ANN_func(cluster_norm = cluster5_norm)
-LM_func(cluster_norm = cluster5_norm)
-KNN_func(cluster_norm = cluster5_norm)
+cluster5_majority_vote$ANN_predict <- ANN_func(cluster_norm = cluster5_norm)
+cluster5_majority_vote$LM_predict <- LM_func(cluster_norm = cluster5_norm)
+cluster5_majority_vote$KNN_predict <- KNN_func(cluster_norm = cluster5_norm)
+cluster5_majority_vote$actual <- set_majority_actual(cluster_norm = cluster5_norm)
+cluster5_majority_vote$combined_predict <- as.factor(ifelse(cluster5_majority_vote$ANN_predict == 1 && cluster5_majority_vote$LM_predict == 1, 1, ifelse(cluster5_majority_vote$ANN_predict == 1 && cluster5_majority_vote$KNN_predict == 1, 1, ifelse(cluster5_majority_vote$LM_predict == 1 && cluster5_majority_vote$KNN_predict == 1, 1, 0))))
 ```
 ## LM and ANN Analysis
 ```{}
