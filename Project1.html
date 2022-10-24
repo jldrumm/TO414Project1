@@ -803,39 +803,20 @@ str(cluster1_norm)</code></pre>
 ##  $ yyes                        : num  0 0 0 0 0 0 0 0 0 0 ...
 ##  $ pdaysdummy                  : num  0 0 0 0 0 0 0 0 0 0 ...
 ##  $ cluster                     : int  5 5 5 5 5 5 5 5 5 5 ...</code></pre>
-<p>TODO - EVERYTHING BELOW HERE! MODELS FOR CLUSTERS 1, 2, AND 5 - AND
-THEN THE PREDICTION WORK AS WELL AS THE EXPLANATION AT THE END</p>
-<div id="getting-train-and-test-samples-for-knn-cluster-1" class="section level2">
-<h2>Getting Train and Test Samples for KNN Cluster 1</h2>
-<pre class="r"><code># TODO - THIS IS NOT CLUSTER 1 DATA
-# Selects 10000 random rows for test data
-set.seed(12345)
-test_set &lt;- sample(1:nrow(tele_norm), 10000) 
-# Depending on R-version and computer, different rows may be selected. 
-# If that happens, results are different. 
-
-# Create a train set and test set
-#First the predictors - all columns except the yyes column
-tele_train &lt;- tele_norm[-test_set, -match(&quot;yyes&quot;,names(tele_norm))]
-tele_test &lt;- tele_norm[test_set, -match(&quot;yyes&quot;,names(tele_norm))]
-
-#Now the response (aka Labels) - only the yyes column
-tele_train_labels &lt;- tele_norm[-test_set, &quot;yyes&quot;]
-tele_test_labels &lt;- tele_norm[test_set, &quot;yyes&quot;]</code></pre>
+<div id="create-the-majority-voting-scheme" class="section level2">
+<h2>Create the Majority Voting Scheme</h2>
+<pre class="r"><code># Now create the majority voting data frame to be completed as we run the models later
+#cluster1_majority_vote &lt;- data.frame(matrix(ncol = 5, nrow = (nrow(cluster1_norm) - floor(0.3 * nrow(cluster1_norm)))))
+#colnames(cluster1_majority_vote) &lt;- c(&quot;actual&quot;, &quot;ANN_predict&quot;, &quot;KNN_predict&quot;, &quot;LM_predict&quot;, &quot;combined_predict&quot;)
+#cluster2_majority_vote &lt;- data.frame(matrix(ncol = 5, nrow = (nrow(cluster2_norm) - floor(0.3 * nrow(cluster2_norm)))))
+#colnames(cluster2_majority_vote) &lt;- c(&quot;actual&quot;, &quot;ANN_predict&quot;, &quot;KNN_predict&quot;, &quot;LM_predict&quot;, &quot;combined_predict&quot;)
+#cluster5_majority_vote &lt;- data.frame(matrix(ncol = 5, nrow = (nrow(cluster5_norm) - floor(0.3 * nrow(cluster5_norm)))))
+#colnames(cluster5_majority_vote) &lt;- c(&quot;actual&quot;, &quot;ANN_predict&quot;, &quot;KNN_predict&quot;, &quot;LM_predict&quot;, &quot;combined_predict&quot;)</code></pre>
 <blockquote>
 <p>Now you are ready to build your ANN model. Feel free to modify the
 data load, cleaning and preparation code above as per your
 preference.</p>
 </blockquote>
-</div>
-<div id="get-train-and-test-samples-for-ann-for-cluster-1" class="section level2">
-<h2>Get Train and Test Samples for ANN for Cluster 1</h2>
-<pre class="r"><code># # TODO - THIS IS NOT CLUSTER 1 DATA
-# set.seed(12345)
-# 
-# tele_sample&lt;- sample(1:nrow(tele_norm), 10000)
-# tele_test &lt;- tele_norm[tele_sample,]
-# tele_train &lt;- tele_norm[-tele_sample,]</code></pre>
 </div>
 <div id="ann-function" class="section level2">
 <h2>ANN function</h2>
@@ -854,6 +835,9 @@ preference.</p>
   func_prediction &lt;- predict(func_model, newdata = cluster_test, type = &quot;response&quot;)
   func_prediction &lt;- ifelse(func_prediction &lt; 0.5, 0, 1)
   confusionMatrix(as.factor(cluster_test$yyes), as.factor(func_prediction))
+  
+  # return the func_prediction
+  # return(as.factor(func_prediction))
 }</code></pre>
 </div>
 <div id="logistics-model-function" class="section level2">
@@ -869,78 +853,48 @@ preference.</p>
   
   glm_Prediction &lt;- predict(cluster_model, newdata = cluster_test, type = &quot;response&quot;)
   glm_Prediction &lt;- ifelse(glm_Prediction &lt; 0.5, 0, 1)
+  summary(glm_Prediction)
 
   CrossTable(x = cluster_test$yyes, y = glm_Prediction, prop.chisq = F)
   confusionMatrix(as.factor(cluster_test$yyes), as.factor(glm_Prediction))
+  # return(as.factor(glm_Prediction))
 }</code></pre>
-</div>
-<div id="debugging" class="section level2">
-<h2>Debugging</h2>
-<pre class="r"><code>#  library(class)
-#   library(caret)
-# 
-# cluster_norm &lt;- cluster1_norm
-# 
-# dummy_data = as.data.frame(model.matrix(~.-1, tele_random))
-# 
-# 
-#   set.seed(12345)
-#   cluster_sample &lt;- sample(1:nrow(cluster_norm), 3000) # 30% size of cluster_norm to use for sample
-#   cluster_test &lt;- cluster_norm[-cluster_sample,] # 70% for test
-#   cluster_train &lt;- cluster_norm[cluster_sample,]
-# 
-#   cluster_train_labels &lt;- dummy_data[-cluster_test, &quot;yyes&quot;]
-#   cluster_test_labels &lt;- dummy_data[cluster_test, &quot;yyes&quot;]
-# 
-# 
-# 
-#   k_val &lt;- sqrt(nrow(cluster_train))
-# 
-#   cluster_train$yyes &lt;- NULL
-#   cluster_test$yyes &lt;- NULL
-# 
-#   cluster_test_pred &lt;- knn(train = cluster_train, test = cluster_test, cl = cluster_train_labels, k = k_val)
-#   library(gmodels)
-#   CrossTable(x = cluster_test_labels, y = cluster_test_pred, prop.chisq = FALSE)</code></pre>
 </div>
 <div id="knn-model-function" class="section level2">
 <h2>KNN Model Function</h2>
-<pre class="r"><code># KNN_func &lt;- function(cluster_norm) {
-#   set.seed(12345)
-#   cluster_sample &lt;- sample(1:nrow(cluster_norm), floor(0.3 * nrow(cluster_norm))) # 30% size of cluster_norm to use for sample
-#   cluster_test &lt;- cluster_norm[-cluster_sample,] # 70% for test
-#   cluster_train &lt;- cluster_norm[cluster_sample,]
-#   
-#   cluster_train_labels &lt;- cluster_norm[-cluster_test, c(&quot;yyes&quot;)]
-#   cluster_test_labels &lt;- cluster_norm[cluster_test, c(&quot;yyes&quot;)]
-#   
-#   library(class)
-#   library(caret)
-#   
-#   k_val &lt;- sqrt(nrow(cluster_train))
-#   
-#   cluster_train$yyes &lt;- NULL
-#   cluster_test$yyes &lt;- NULL
-#   
-#   cluster_test_pred &lt;- knn(train = cluster_train, test = cluster_test, cl = cluster_train_labels, k = k_val)
-#   library(gmodels)
-#   CrossTable(x = cluster_test_labels, y = cluster_test_pred, prop.chisq = FALSE)
-#   
-# }
-# 
-# # cluster_for_KNN &lt;- as.data.frame(lapply(cluster1_norm[1:ncol(cluster1_norm)], normalize))
-# 
-# fkjdsl &lt;- KNN_func(cluster1_norm)</code></pre>
+<pre class="r"><code>KNN_func &lt;- function(cluster_norm){
+
+library(class)
+library(caret)
+library(gmodels)
+set.seed(12345)
+
+# just renamed indices variable
+test_indices &lt;- sample(1:nrow(cluster_norm), floor(0.3 * nrow(cluster_norm)))
+cluster_test &lt;- cluster_norm[-test_indices,] # 70% for test
+cluster_train &lt;- cluster_norm[test_indices,]
+
+#labels must be the same length so get them from cluster1_norm
+cluster_test_labels &lt;- cluster_norm[-test_indices, &quot;yyes&quot;]
+cluster_train_labels &lt;- cluster_norm[test_indices, &quot;yyes&quot;]
+
+
+#this cluster as a hwhole tends to have yyes = 0, so I set the k-val arbitrarily to a low number to be able to predict 1&#39;s - From Jake in OH
+k_val &lt;- 1
+
+cluster_train$yyes &lt;- NULL
+cluster_test$yyes &lt;- NULL
+
+cluster_test_pred &lt;- knn(train = cluster_train, test = cluster_test, cl = cluster_train_labels, k = k_val)
+
+CrossTable(x = cluster_test_labels, y = cluster_test_pred, prop.chisq = FALSE)
+confusionMatrix(as.factor(cluster_test_labels), as.factor(cluster_test_pred))
+# return(as.factor(cluster_test_pred))
+}</code></pre>
 </div>
-<div id="why-we-arent-using-knn" class="section level2">
-<h2>Why we aren’t using KNN</h2>
-<pre><code>Our KNN function is failing with an error. We went to OH with Jake. He couldn&#39;t figure out the issue wither and told us to complete the project without using KNN.</code></pre>
-</div>
-<div id="compare-ann-and-lm-on-cluster-1" class="section level2">
-<h2>Compare ANN and LM on Cluster 1</h2>
+<div id="compare-ann-lm-knn-and-majority-voting-on-cluster-1" class="section level2">
+<h2>Compare ANN, LM, KNN, and Majority Voting on Cluster 1</h2>
 <pre class="r"><code>ANN_func(cluster_norm = cluster1_norm)</code></pre>
-<pre><code>## Loading required package: ggplot2</code></pre>
-<pre><code>## Loading required package: lattice</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
@@ -1030,9 +984,70 @@ preference.</p>
 ##                                           
 ##        &#39;Positive&#39; Class : 0               
 ## </code></pre>
+<pre class="r"><code>KNN_func(cluster_norm = cluster1_norm)</code></pre>
+<pre><code>## 
+##  
+##    Cell Contents
+## |-------------------------|
+## |                       N |
+## |           N / Row Total |
+## |           N / Col Total |
+## |         N / Table Total |
+## |-------------------------|
+## 
+##  
+## Total Observations in Table:  7964 
+## 
+##  
+##                     | cluster_test_pred 
+## cluster_test_labels |         0 |         1 | Row Total | 
+## --------------------|-----------|-----------|-----------|
+##                   0 |      7406 |       265 |      7671 | 
+##                     |     0.965 |     0.035 |     0.963 | 
+##                     |     0.965 |     0.927 |           | 
+##                     |     0.930 |     0.033 |           | 
+## --------------------|-----------|-----------|-----------|
+##                   1 |       272 |        21 |       293 | 
+##                     |     0.928 |     0.072 |     0.037 | 
+##                     |     0.035 |     0.073 |           | 
+##                     |     0.034 |     0.003 |           | 
+## --------------------|-----------|-----------|-----------|
+##        Column Total |      7678 |       286 |      7964 | 
+##                     |     0.964 |     0.036 |           | 
+## --------------------|-----------|-----------|-----------|
+## 
+## </code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    0    1
+##          0 7406  265
+##          1  272   21
+##                                          
+##                Accuracy : 0.9326         
+##                  95% CI : (0.9268, 0.938)
+##     No Information Rate : 0.9641         
+##     P-Value [Acc &gt; NIR] : 1.0000         
+##                                          
+##                   Kappa : 0.0376         
+##                                          
+##  Mcnemar&#39;s Test P-Value : 0.7957         
+##                                          
+##             Sensitivity : 0.96457        
+##             Specificity : 0.07343        
+##          Pos Pred Value : 0.96545        
+##          Neg Pred Value : 0.07167        
+##              Prevalence : 0.96409        
+##          Detection Rate : 0.92993        
+##    Detection Prevalence : 0.96321        
+##       Balanced Accuracy : 0.51900        
+##                                          
+##        &#39;Positive&#39; Class : 0              
+## </code></pre>
+<pre class="r"><code>#cluster1_majority_vote$combined_predict &lt;- as.factor(ifelse(cluster1_majority_vote$ANN_predict == 1 &amp;&amp; cluster1_majority_vote$LM_predict == 1, 1, ifelse(cluster1_majority_vote$ANN_predict == 1 &amp;&amp; cluster1_majority_vote$KNN_predict == 1, 1, ifelse(cluster1_majority_vote$LM_predict == 1 &amp;&amp; cluster1_majority_vote$KNN_predict == 1, 1, 0))))</code></pre>
 </div>
-<div id="compare-ann-and-lm-on-cluster-2" class="section level2">
-<h2>Compare ANN and LM on Cluster 2</h2>
+<div id="compare-ann-lm-knn-and-majority-voting-on-cluster-2" class="section level2">
+<h2>Compare ANN, LM, KNN, and Majority Voting on Cluster 2</h2>
 <pre class="r"><code>ANN_func(cluster_norm = cluster2_norm)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
@@ -1123,9 +1138,72 @@ preference.</p>
 ##                                          
 ##        &#39;Positive&#39; Class : 0              
 ## </code></pre>
+<pre class="r"><code>KNN_func(cluster_norm = cluster2_norm)</code></pre>
+<pre><code>## 
+##  
+##    Cell Contents
+## |-------------------------|
+## |                       N |
+## |           N / Row Total |
+## |           N / Col Total |
+## |         N / Table Total |
+## |-------------------------|
+## 
+##  
+## Total Observations in Table:  8649 
+## 
+##  
+##                     | cluster_test_pred 
+## cluster_test_labels |         0 |         1 | Row Total | 
+## --------------------|-----------|-----------|-----------|
+##                   0 |      7698 |       460 |      8158 | 
+##                     |     0.944 |     0.056 |     0.943 | 
+##                     |     0.944 |     0.924 |           | 
+##                     |     0.890 |     0.053 |           | 
+## --------------------|-----------|-----------|-----------|
+##                   1 |       453 |        38 |       491 | 
+##                     |     0.923 |     0.077 |     0.057 | 
+##                     |     0.056 |     0.076 |           | 
+##                     |     0.052 |     0.004 |           | 
+## --------------------|-----------|-----------|-----------|
+##        Column Total |      8151 |       498 |      8649 | 
+##                     |     0.942 |     0.058 |           | 
+## --------------------|-----------|-----------|-----------|
+## 
+## </code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    0    1
+##          0 7698  460
+##          1  453   38
+##                                           
+##                Accuracy : 0.8944          
+##                  95% CI : (0.8878, 0.9008)
+##     No Information Rate : 0.9424          
+##     P-Value [Acc &gt; NIR] : 1.0000          
+##                                           
+##                   Kappa : 0.0209          
+##                                           
+##  Mcnemar&#39;s Test P-Value : 0.8426          
+##                                           
+##             Sensitivity : 0.94442         
+##             Specificity : 0.07631         
+##          Pos Pred Value : 0.94361         
+##          Neg Pred Value : 0.07739         
+##              Prevalence : 0.94242         
+##          Detection Rate : 0.89005         
+##    Detection Prevalence : 0.94323         
+##       Balanced Accuracy : 0.51036         
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+<pre class="r"><code>#cluster2_majority_vote$combined_predict &lt;- as.factor(ifelse(cluster2_majority_vote$ANN_predict == 1 &amp;&amp; cluster2_majority_vote$LM_predict == 1, 1, ifelse(cluster2_majority_vote$ANN_predict == 1 &amp;&amp; cluster2_majority_vote$KNN_predict == 1, 1, ifelse(cluster2_majority_vote$LM_predict == 1 &amp;&amp; cluster2_majority_vote$KNN_predict == 1, 1, 0))))
+# print the majority scheme accuracy
+#nrow(cluster2_majority_vote[cluster2_majority_vote$actual == cluster2_majority_vote$combined_predict]) / nrow(cluster2_majority_vote)</code></pre>
 </div>
-<div id="compare-ann-and-lm-on-cluster-5" class="section level2">
-<h2>Compare ANN and LM on Cluster 5</h2>
+<div id="compare-ann-lm-knn-and-majority-voting-on-cluster-5" class="section level2">
+<h2>Compare ANN, LM, KNN, and Majority Voting on Cluster 5</h2>
 <pre class="r"><code>ANN_func(cluster_norm = cluster5_norm)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
@@ -1217,12 +1295,111 @@ preference.</p>
 ##                                           
 ##        &#39;Positive&#39; Class : 0               
 ## </code></pre>
+<pre class="r"><code>KNN_func(cluster_norm = cluster5_norm)</code></pre>
+<pre><code>## 
+##  
+##    Cell Contents
+## |-------------------------|
+## |                       N |
+## |           N / Row Total |
+## |           N / Col Total |
+## |         N / Table Total |
+## |-------------------------|
+## 
+##  
+## Total Observations in Table:  3094 
+## 
+##  
+##                     | cluster_test_pred 
+## cluster_test_labels |         0 |         1 | Row Total | 
+## --------------------|-----------|-----------|-----------|
+##                   0 |      2783 |       106 |      2889 | 
+##                     |     0.963 |     0.037 |     0.934 | 
+##                     |     0.937 |     0.848 |           | 
+##                     |     0.899 |     0.034 |           | 
+## --------------------|-----------|-----------|-----------|
+##                   1 |       186 |        19 |       205 | 
+##                     |     0.907 |     0.093 |     0.066 | 
+##                     |     0.063 |     0.152 |           | 
+##                     |     0.060 |     0.006 |           | 
+## --------------------|-----------|-----------|-----------|
+##        Column Total |      2969 |       125 |      3094 | 
+##                     |     0.960 |     0.040 |           | 
+## --------------------|-----------|-----------|-----------|
+## 
+## </code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    0    1
+##          0 2783  106
+##          1  186   19
+##                                           
+##                Accuracy : 0.9056          
+##                  95% CI : (0.8948, 0.9157)
+##     No Information Rate : 0.9596          
+##     P-Value [Acc &gt; NIR] : 1               
+##                                           
+##                   Kappa : 0.0684          
+##                                           
+##  Mcnemar&#39;s Test P-Value : 3.78e-06        
+##                                           
+##             Sensitivity : 0.93735         
+##             Specificity : 0.15200         
+##          Pos Pred Value : 0.96331         
+##          Neg Pred Value : 0.09268         
+##              Prevalence : 0.95960         
+##          Detection Rate : 0.89948         
+##    Detection Prevalence : 0.93374         
+##       Balanced Accuracy : 0.54468         
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+<pre class="r"><code>#cluster5_majority_vote$combined_predict &lt;- as.factor(ifelse(cluster5_majority_vote$ANN_predict == 1 &amp;&amp; cluster5_majority_vote$LM_predict == 1, 1, ifelse(cluster5_majority_vote$ANN_predict == 1 &amp;&amp; cluster5_majority_vote$KNN_predict == 1, 1, ifelse(cluster5_majority_vote$LM_predict == 1 &amp;&amp; cluster5_majority_vote$KNN_predict == 1, 1, 0))))</code></pre>
 </div>
-<div id="lm-and-ann-analysis" class="section level2">
-<h2>LM and ANN Analysis</h2>
-<pre><code>Without KNN we cannot do a majority voting scheme, so we need to do our analysis purely based off of ANN and LM models for the chosen clusters.
+<div id="final-analysis" class="section level2">
+<h2>Final Analysis</h2>
+<pre><code>With our analysis of ANN, KNN, and LM models, we strived to pick the model with the highest sensitivity and specificity. This is because high specificity helps predict which customers will subscribe to a term deposit based on similar characteristics to consumers who have purchased in the past, or in other words true positives. Additionally, high sensitivity helps us predict, which customers the banks should not try to sell to based on similar characteristics of consumers who hadn&#39;t purchased in the past, or in other words true negatives.
 
-</code></pre>
+ 
+
+Banks are currently calling 41,188 people and are successful 11% of the time this means that their total costs are $41,188 ($1 per call) and their current Revenue is $31,715 ($7 in revenue per call ($6 in profit)). Therefore they have a negative profit margin of $9,473. As stated above the banks need to make a sale every 6 calls in order to become profitable, so this is what we will try to achieve with our models.
+
+ 
+
+As stated in the earlier in the cluster cost-benefit analysis, banks should call everyone in clusters 3 and 4 because they are profitable and are above the breakeven threshold.
+
+ 
+
+For clusters 1, 2, and 5 we believe that an LM model is best for banks to help make informed decisions, decide who to sell to, and improve their profitability.
+
+All 3 clusters have very similar sensitivity for each model, with Cluster 1 having specificity between .964 and .965 for the ANN, LN and KNN models, cluster 2 has .943 for all models, and cluster 5 having between .936 and .937 for ANN and LN and .965 for KNN. However, the Logistic regression models have much higher Sensitivity than the ANN and KNN models across the board. Cluster 1 has an ANN sensitivity of .216, a KNN sensitivity of .072, and a LM sensitivity of .457. Cluster 2&#39;s ANN model has a sensitivity of .130, a KNN sensitivity of .077, and a LM model sensitivity of .5. Cluster 3’s ANN model has a sensitivity of .185, a KNN sensitivity of .093 and a LM sensitivity of .565. Because the LM models have much higher specifity ratings the banks will be able to predict true positives more accurately and will result in more profitability because they are spending less money on calling potential consumers who won&#39;t actually buy the service. One risk of utilizing the LM models over the ANN models is that the kappas are higher across the board for the LM models, meaning that the probability of randomness is higher. However, we believe this risk is mitigated by the fact that our specificity ratings for the LM models are so much more accurate.
+
+ 
+
+After figuring out which models work best for determining who banks should target, we wanted to figure out what our new profit margins would be. Here are the following costs, revenue, and profits for each cluster:
+
+ 
+
+Cluster 1: C: $35 R: $112, Profit: $77
+
+Cluster 2: C: $4 R: $14, Profit: $10
+
+Cluster 3: C: $11,994, R: $16,392, Profit: $4,398
+
+Cluster 4: C: $1,518, R: $10,622, Profit: $9,104
+
+Cluster 5: C: $23 R: $91, Profit $68
+
+ 
+
+Total Profit after using our model: $13,657
+
+ 
+
+Using our LN models and the data from clusters 3 and 4 we were able to help the banks achieve a profit of $13,657. Before using our models, the bank was operating at a loss of $9,473, so we helped them increase their profit by $23,130.
+
+NOTE: A majority voting scheme was completed, however its implementation caused other backend issues to occur in RStudio throwing off the data in the other models, which is why it was left off of our final analysis. However, this code can be found in the comments for those curious about how it works, combining all of the other three models into one. </code></pre>
 </div>
 </div>
 

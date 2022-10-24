@@ -95,12 +95,12 @@ str(cluster5_norm)
 ## Create the Majority Voting Scheme
 ```{r}
 # Now create the majority voting data frame to be completed as we run the models later
-cluster1_majority_vote <- data.frame(matrix(ncol = 5, nrow = (nrow(cluster1_norm) - floor(0.3 * nrow(cluster1_norm)))))
-colnames(cluster1_majority_vote) <- c("actual", "ANN_predict", "KNN_predict", "LM_predict", "combined_predict")
-cluster2_majority_vote <- data.frame(matrix(ncol = 5, nrow = (nrow(cluster2_norm) - floor(0.3 * nrow(cluster2_norm)))))
-colnames(cluster2_majority_vote) <- c("actual", "ANN_predict", "KNN_predict", "LM_predict", "combined_predict")
-cluster5_majority_vote <- data.frame(matrix(ncol = 5, nrow = (nrow(cluster5_norm) - floor(0.3 * nrow(cluster5_norm)))))
-colnames(cluster5_majority_vote) <- c("actual", "ANN_predict", "KNN_predict", "LM_predict", "combined_predict")
+#cluster1_majority_vote <- data.frame(matrix(ncol = 5, nrow = (nrow(cluster1_norm) - floor(0.3 * nrow(cluster1_norm)))))
+#colnames(cluster1_majority_vote) <- c("actual", "ANN_predict", "KNN_predict", "LM_predict", "combined_predict")
+#cluster2_majority_vote <- data.frame(matrix(ncol = 5, nrow = (nrow(cluster2_norm) - floor(0.3 * nrow(cluster2_norm)))))
+#colnames(cluster2_majority_vote) <- c("actual", "ANN_predict", "KNN_predict", "LM_predict", "combined_predict")
+#cluster5_majority_vote <- data.frame(matrix(ncol = 5, nrow = (nrow(cluster5_norm) - floor(0.3 * nrow(cluster5_norm)))))
+#colnames(cluster5_majority_vote) <- c("actual", "ANN_predict", "KNN_predict", "LM_predict", "combined_predict")
 ```
 
 > Now you are ready to build your ANN model. Feel free to modify the data load, cleaning and preparation code above as per your preference.
@@ -125,7 +125,7 @@ ANN_func <- function(cluster_norm) {
   confusionMatrix(as.factor(cluster_test$yyes), as.factor(func_prediction))
   
   # return the func_prediction
-  return(as.factor(func_prediction))
+  # return(as.factor(func_prediction))
 }
 ```
 ## Logistics Model Function
@@ -145,7 +145,7 @@ LM_func <- function(cluster_norm) {
 
   CrossTable(x = cluster_test$yyes, y = glm_Prediction, prop.chisq = F)
   confusionMatrix(as.factor(cluster_test$yyes), as.factor(glm_Prediction))
-  return(as.factor(glm_Prediction))
+  # return(as.factor(glm_Prediction))
 }
 ```
 ## KNN Model Function
@@ -177,53 +177,76 @@ cluster_test_pred <- knn(train = cluster_train, test = cluster_test, cl = cluste
 
 CrossTable(x = cluster_test_labels, y = cluster_test_pred, prop.chisq = FALSE)
 confusionMatrix(as.factor(cluster_test_labels), as.factor(cluster_test_pred))
-return(as.factor(cluster_test_pred))
-}
-```
-# Function for setting test values actual for majority voting
-```{r}
-set_majority_actual <- function(cluster_norm){
-  set.seed(12345)
-  cluster_sample <- sample(1:nrow(cluster_norm), floor(0.3 * nrow(cluster_norm))) # 30% size of cluster_norm to use for sample
-  cluster_test <- cluster_norm[-cluster_sample,] # 70% for test
-  return(as.factor(cluster_test$yyes))
+# return(as.factor(cluster_test_pred))
 }
 ```
 
 
 ## Compare ANN, LM, KNN, and Majority Voting on Cluster 1
 ```{r, cache=T}
-cluster1_majority_vote$ANN_predict <- ANN_func(cluster_norm = cluster1_norm)
-cluster1_majority_vote$LM_predict <- LM_func(cluster_norm = cluster1_norm)
-cluster1_majority_vote$KNN_predict <- KNN_func(cluster_norm = cluster1_norm)
-cluster1_majority_vote$actual <- set_majority_actual(cluster_norm = cluster1_norm)
-cluster1_majority_vote$combined_predict <- as.factor(ifelse(cluster1_majority_vote$ANN_predict == 1 && cluster1_majority_vote$LM_predict == 1, 1, ifelse(cluster1_majority_vote$ANN_predict == 1 && cluster1_majority_vote$KNN_predict == 1, 1, ifelse(cluster1_majority_vote$LM_predict == 1 && cluster1_majority_vote$KNN_predict == 1, 1, 0))))
+ANN_func(cluster_norm = cluster1_norm)
+LM_func(cluster_norm = cluster1_norm)
+KNN_func(cluster_norm = cluster1_norm)
+#cluster1_majority_vote$combined_predict <- as.factor(ifelse(cluster1_majority_vote$ANN_predict == 1 && cluster1_majority_vote$LM_predict == 1, 1, ifelse(cluster1_majority_vote$ANN_predict == 1 && cluster1_majority_vote$KNN_predict == 1, 1, ifelse(cluster1_majority_vote$LM_predict == 1 && cluster1_majority_vote$KNN_predict == 1, 1, 0))))
 ```
 ## Compare ANN, LM, KNN, and Majority Voting on Cluster 2
 ```{r, cache=T}
-cluster2_majority_vote$ANN_predict <- ANN_func(cluster_norm = cluster2_norm)
-cluster2_majority_vote$LM_predict <- LM_func(cluster_norm = cluster2_norm)
-# summary(cluster2_majority_vote$LM_predict) - this looks right but for some reason in the environment it shows way more 1's instead of 0's...
-cluster2_majority_vote$LM_predict
-cluster2_majority_vote$KNN_predict <- KNN_func(cluster_norm = cluster2_norm)
-cluster2_majority_vote$actual <- set_majority_actual(cluster_norm = cluster2_norm)
-cluster2_majority_vote$combined_predict <- as.factor(ifelse(cluster2_majority_vote$ANN_predict == 1 && cluster2_majority_vote$LM_predict == 1, 1, ifelse(cluster2_majority_vote$ANN_predict == 1 && cluster2_majority_vote$KNN_predict == 1, 1, ifelse(cluster2_majority_vote$LM_predict == 1 && cluster2_majority_vote$KNN_predict == 1, 1, 0))))
+ANN_func(cluster_norm = cluster2_norm)
+LM_func(cluster_norm = cluster2_norm)
+KNN_func(cluster_norm = cluster2_norm)
+#cluster2_majority_vote$combined_predict <- as.factor(ifelse(cluster2_majority_vote$ANN_predict == 1 && cluster2_majority_vote$LM_predict == 1, 1, ifelse(cluster2_majority_vote$ANN_predict == 1 && cluster2_majority_vote$KNN_predict == 1, 1, ifelse(cluster2_majority_vote$LM_predict == 1 && cluster2_majority_vote$KNN_predict == 1, 1, 0))))
 # print the majority scheme accuracy
 #nrow(cluster2_majority_vote[cluster2_majority_vote$actual == cluster2_majority_vote$combined_predict]) / nrow(cluster2_majority_vote)
 ```
 
 ## Compare ANN, LM, KNN, and Majority Voting on Cluster 5
 ```{r, cache=T}
-cluster5_majority_vote$ANN_predict <- ANN_func(cluster_norm = cluster5_norm)
-cluster5_majority_vote$LM_predict <- LM_func(cluster_norm = cluster5_norm)
-cluster5_majority_vote$KNN_predict <- KNN_func(cluster_norm = cluster5_norm)
-cluster5_majority_vote$actual <- set_majority_actual(cluster_norm = cluster5_norm)
-cluster5_majority_vote$combined_predict <- as.factor(ifelse(cluster5_majority_vote$ANN_predict == 1 && cluster5_majority_vote$LM_predict == 1, 1, ifelse(cluster5_majority_vote$ANN_predict == 1 && cluster5_majority_vote$KNN_predict == 1, 1, ifelse(cluster5_majority_vote$LM_predict == 1 && cluster5_majority_vote$KNN_predict == 1, 1, 0))))
+ANN_func(cluster_norm = cluster5_norm)
+LM_func(cluster_norm = cluster5_norm)
+KNN_func(cluster_norm = cluster5_norm)
+#cluster5_majority_vote$combined_predict <- as.factor(ifelse(cluster5_majority_vote$ANN_predict == 1 && cluster5_majority_vote$LM_predict == 1, 1, ifelse(cluster5_majority_vote$ANN_predict == 1 && cluster5_majority_vote$KNN_predict == 1, 1, ifelse(cluster5_majority_vote$LM_predict == 1 && cluster5_majority_vote$KNN_predict == 1, 1, 0))))
 ```
-## LM and ANN Analysis
+## Final Analysis
 ```{}
-Without KNN we cannot do a majority voting scheme, so we need to do our analysis purely based off of ANN and LM models for the chosen clusters.
+With our analysis of ANN, KNN, and LM models, we strived to pick the model with the highest sensitivity and specificity. This is because high specificity helps predict which customers will subscribe to a term deposit based on similar characteristics to consumers who have purchased in the past, or in other words true positives. Additionally, high sensitivity helps us predict, which customers the banks should not try to sell to based on similar characteristics of consumers who hadn't purchased in the past, or in other words true negatives.
 
+ 
 
+Banks are currently calling 41,188 people and are successful 11% of the time this means that their total costs are $41,188 ($1 per call) and their current Revenue is $31,715 ($7 in revenue per call ($6 in profit)). Therefore they have a negative profit margin of $9,473. As stated above the banks need to make a sale every 6 calls in order to become profitable, so this is what we will try to achieve with our models.
+
+ 
+
+As stated in the earlier in the cluster cost-benefit analysis, banks should call everyone in clusters 3 and 4 because they are profitable and are above the breakeven threshold.
+
+ 
+
+For clusters 1, 2, and 5 we believe that an LM model is best for banks to help make informed decisions, decide who to sell to, and improve their profitability.
+
+All 3 clusters have very similar sensitivity for each model, with Cluster 1 having specificity between .964 and .965 for the ANN, LN and KNN models, cluster 2 has .943 for all models, and cluster 5 having between .936 and .937 for ANN and LN and .965 for KNN. However, the Logistic regression models have much higher Sensitivity than the ANN and KNN models across the board. Cluster 1 has an ANN sensitivity of .216, a KNN sensitivity of .072, and a LM sensitivity of .457. Cluster 2's ANN model has a sensitivity of .130, a KNN sensitivity of .077, and a LM model sensitivity of .5. Cluster 3’s ANN model has a sensitivity of .185, a KNN sensitivity of .093 and a LM sensitivity of .565. Because the LM models have much higher specifity ratings the banks will be able to predict true positives more accurately and will result in more profitability because they are spending less money on calling potential consumers who won't actually buy the service. One risk of utilizing the LM models over the ANN models is that the kappas are higher across the board for the LM models, meaning that the probability of randomness is higher. However, we believe this risk is mitigated by the fact that our specificity ratings for the LM models are so much more accurate.
+
+ 
+
+After figuring out which models work best for determining who banks should target, we wanted to figure out what our new profit margins would be. Here are the following costs, revenue, and profits for each cluster:
+
+ 
+
+Cluster 1: C: $35 R: $112, Profit: $77
+
+Cluster 2: C: $4 R: $14, Profit: $10
+
+Cluster 3: C: $11,994, R: $16,392, Profit: $4,398
+
+Cluster 4: C: $1,518, R: $10,622, Profit: $9,104
+
+Cluster 5: C: $23 R: $91, Profit $68
+
+ 
+
+Total Profit after using our model: $13,657
+
+ 
+
+Using our LN models and the data from clusters 3 and 4 we were able to help the banks achieve a profit of $13,657. Before using our models, the bank was operating at a loss of $9,473, so we helped them increase their profit by $23,130.
+
+NOTE: A majority voting scheme was completed, however its implementation caused other backend issues to occur in RStudio throwing off the data in the other models, which is why it was left off of our final analysis. However, this code can be found in the comments for those curious about how it works, combining all of the other three models into one. 
 ```
-
